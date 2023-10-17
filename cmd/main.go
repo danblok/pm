@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"log/slog"
 	"os"
@@ -21,16 +20,12 @@ type app struct {
 
 func main() {
 	godotenv.Load()
-	user := os.Getenv("POSTGRES_USER")
-	if user == "" {
-		log.Fatal("POSTGRES_USER isn't specified")
-	}
-	password := os.Getenv("POSTGRES_PASSWORD")
-	if password == "" {
-		log.Fatal("POSTGRES_PASSWORD isn't specified")
+	url := os.Getenv("POSTGRES_URL_ALT")
+	if url == "" {
+		log.Fatal("POSTGRES_URL_ALT isn't specified")
 	}
 
-	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=postgres sslmode=disable", user, password))
+	db, err := sql.Open("postgres", url)
 	if err != nil {
 		log.Fatal("Couldn't open connection to db: ", err)
 	}
@@ -51,7 +46,6 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	// TODO: handlers setup
 
 	app.logger.Info("Server started on http://localhost:3000")
 	e.Logger.Fatal(e.Start(":3000"))
