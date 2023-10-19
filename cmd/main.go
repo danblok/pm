@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/danblok/pm/internals/handlers"
 	"github.com/danblok/pm/internals/service"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -13,14 +14,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type app struct {
-	service *service.Service
-	logger  *slog.Logger
-}
-
 func main() {
 	godotenv.Load()
-	url := os.Getenv("POSTGRES_URL_ALT")
+	url := os.Getenv("POSTGRES_URL")
 	if url == "" {
 		log.Fatal("POSTGRES_URL_ALT isn't specified")
 	}
@@ -35,18 +31,24 @@ func main() {
 		log.Fatal("Couldn't ping to db: ", err)
 	}
 
-	app := &app{
-		service: &service.Service{
+	app := &handlers.App{
+		Service: &service.Service{
 			DB: db,
 		},
-		logger: slog.Default(),
+		Logger: slog.Default(),
 	}
 
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	api := e.Group("/api")
+	api.GET("/accounts/:id", app.HandleGetAccount)
+	api.GET("/accounts", app.HandleGetAllAccounts)
+	api.POST("/accounts", app.HandlePostAccount)
+	api.DELETE("/accounts/:id", app.HandleDeleteAccount)
+	api.PATCH("/accounts/:id", app.HandlePatchAccount)
 
-	app.logger.Info("Server started on http://localhost:3000")
+	app.Logger.Info("Server started on http://localhost:3000")
 	e.Logger.Fatal(e.Start(":3000"))
 }
