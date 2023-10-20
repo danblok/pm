@@ -23,5 +23,5 @@ test:
 	docker compose -f docker-compose-test.yml -p testing up -d
 	sleep 2
 	-migrate -database "$(POSTGRES_URL_TEST)" -path migrations up
-	-POSTGRES_URL_TEST=$(POSTGRES_URL_TEST) go test ./... -cover -v
+	-POSTGRES_URL_TEST=$(POSTGRES_URL_TEST) go test -p 1 ./... -cover -v -count 1
 	docker rm -f test
