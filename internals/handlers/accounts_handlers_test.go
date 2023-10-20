@@ -18,13 +18,8 @@ var (
 )
 
 func TestHandleGetAccount(t *testing.T) {
-	app := setupApp(t)
-	defer func() {
-		_, err := app.Service.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			t.Fatal("couldn't clean up the accounts table", err)
-		}
-	}()
+	app, cleanUp := setupApp(t)
+	defer cleanUp("accounts")
 
 	acc := types.Account{
 		Id:    uuid.NewString(),
@@ -34,11 +29,11 @@ func TestHandleGetAccount(t *testing.T) {
 	app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
 
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/accounts", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	c := e.NewContext(req, res)
-	c.SetPath("/:id")
+	c.SetPath("/accounts/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(acc.Id)
 
@@ -55,13 +50,8 @@ func TestHandleGetAccount(t *testing.T) {
 }
 
 func TestHandleGetAllAccounts(t *testing.T) {
-	app := setupApp(t)
-	defer func() {
-		_, err := app.Service.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			t.Fatal("couldn't clean up the accounts table", err)
-		}
-	}()
+	app, cleanUp := setupApp(t)
+	defer cleanUp("accounts")
 
 	accs := []types.Account{
 		{
@@ -83,7 +73,6 @@ func TestHandleGetAllAccounts(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	c := e.NewContext(req, res)
-	c.SetPath("/accounts")
 
 	err := app.HandleGetAllAccounts(c)
 	if err != nil {
@@ -98,13 +87,8 @@ func TestHandleGetAllAccounts(t *testing.T) {
 }
 
 func TestHandlePostAccount(t *testing.T) {
-	app := setupApp(t)
-	defer func() {
-		_, err := app.Service.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			t.Fatal("couldn't clean up the accounts table", err)
-		}
-	}()
+	app, cleanUp := setupApp(t)
+	defer cleanUp("accounts")
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(addUserJson))
@@ -125,7 +109,8 @@ func TestHandlePostAccount(t *testing.T) {
 }
 
 func TestHandlePatchAccount(t *testing.T) {
-	app := setupApp(t)
+	app, cleanUp := setupApp(t)
+	defer cleanUp("accounts")
 	defer func() {
 		_, err := app.Service.DB.Exec("DELETE FROM accounts")
 		if err != nil {
@@ -149,7 +134,7 @@ func TestHandlePatchAccount(t *testing.T) {
 	c.SetParamNames("id")
 	c.SetParamValues(acc.Id)
 
-	err := app.HandlePatchAccount(c)
+	err := app.HandleUpdateAccount(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,13 +147,8 @@ func TestHandlePatchAccount(t *testing.T) {
 }
 
 func TestHandleDeleteAccount(t *testing.T) {
-	app := setupApp(t)
-	defer func() {
-		_, err := app.Service.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			t.Fatal("couldn't clean up the accounts table", err)
-		}
-	}()
+	app, cleanUp := setupApp(t)
+	defer cleanUp("accounts")
 
 	acc := types.Account{
 		Id:    uuid.NewString(),
@@ -178,7 +158,7 @@ func TestHandleDeleteAccount(t *testing.T) {
 	app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
 
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodPatch, "/", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	c := e.NewContext(req, res)
