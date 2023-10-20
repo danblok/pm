@@ -2,23 +2,24 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/danblok/pm/internals/types"
 	"github.com/google/uuid"
 )
 
 type AddAccountInput struct {
-	validationErrors map[string]string
-	Email            string
-	Name             string
-	Avatar           string
+	Email  string `json:"email"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar,omitempty"`
 }
 
 type UpdateAccountInput struct {
-	Id     string
-	Email  string
-	Name   string
-	Avatar string
+	Id     string `param:"id"`
+	Email  string `json:"email,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Avatar string `json:"avatar,omitempty"`
 }
 
 // Returns an account by searching with provided id
