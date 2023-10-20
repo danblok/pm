@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"log"
 	"testing"
 
 	"github.com/danblok/pm/internals/types"
@@ -12,13 +11,8 @@ import (
 )
 
 func TestAddAccount(t *testing.T) {
-	s := setupService(t)
-	defer func() {
-		_, err := s.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+	s, cleanUp := setupServiceLifetime(t)
+	defer cleanUp("accounts")
 
 	want := types.Account{
 		Email: "username@gmail.com",
@@ -30,10 +24,7 @@ func TestAddAccount(t *testing.T) {
 	}
 	err := s.AddAccount(context.TODO(), &input)
 	if err != nil {
-		if errors.Is(err, ErrFailedToUpdate) {
-			t.Fatal("no rows were affected: ", err)
-		}
-		t.Fatal("internal query err: ", err)
+		t.Fatal(err)
 	}
 
 	row := s.DB.QueryRow("SELECT email, name FROM accounts LIMIT 1")
@@ -73,13 +64,8 @@ func TestAddAccount(t *testing.T) {
 }
 
 func TestGetAccountById(t *testing.T) {
-	s := setupService(t)
-	defer func() {
-		_, err := s.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+	s, cleanUp := setupServiceLifetime(t)
+	defer cleanUp("accounts")
 
 	want := types.Account{
 		Id:    uuid.NewString(),
@@ -112,13 +98,8 @@ func TestGetAccountById(t *testing.T) {
 }
 
 func TestGetAllAccounts(t *testing.T) {
-	s := setupService(t)
-	defer func() {
-		_, err := s.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+	s, cleanUp := setupServiceLifetime(t)
+	defer cleanUp("accounts")
 
 	want := []types.Account{
 		{
@@ -159,13 +140,8 @@ func TestGetAllAccounts(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	s := setupService(t)
-	defer func() {
-		_, err := s.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+	s, cleanUp := setupServiceLifetime(t)
+	defer cleanUp("accounts")
 
 	acc := types.Account{
 		Id:    uuid.NewString(),
@@ -234,21 +210,16 @@ func TestUpdateAccount(t *testing.T) {
 }
 
 func TestDeleteAccount(t *testing.T) {
-	s := setupService(t)
-	defer func() {
-		_, err := s.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+	s, cleanUp := setupServiceLifetime(t)
+	defer cleanUp("accounts")
 
-	err := s.DeleteAccount(context.TODO(), "")
+	err := s.DeleteAccountById(context.TODO(), "")
 	if !errors.Is(err, ErrFailedValidation) {
 		t.Fatal("should error on validation(incorrect id format): ", err)
 	}
 
 	id := uuid.NewString()
-	err = s.DeleteAccount(context.TODO(), id)
+	err = s.DeleteAccountById(context.TODO(), id)
 	if !errors.Is(err, ErrFailedToUpdate) {
 		t.Fatalf("should error on none existing record with id: %s, err: %s", id, err)
 	}
@@ -264,7 +235,7 @@ func TestDeleteAccount(t *testing.T) {
 		t.Fatal("prep test insertion error: ", err)
 	}
 
-	err = s.DeleteAccount(context.TODO(), want.Id)
+	err = s.DeleteAccountById(context.TODO(), want.Id)
 	if err != nil {
 		if errors.Is(err, ErrFailedToUpdate) {
 			t.Fatal("no rows were affected: ", err)
