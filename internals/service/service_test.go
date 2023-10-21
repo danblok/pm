@@ -5,20 +5,25 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	_ "github.com/lib/pq"
 )
 
-func setupServiceLifetime(t *testing.T) (*Service, func(...string)) {
+func setupService(t *testing.T) (*Service, func(...string) func()) {
 	db, err := sql.Open("postgres", os.Getenv("POSTGRES_URL_TEST"))
 	if err != nil {
 		t.Fatalf("connection to db: %s", err)
 	}
-	return &Service{DB: db}, func(tables ...string) {
-		for _, table := range tables {
-			_, err = db.Exec(fmt.Sprintf("DELETE FROM %s", table))
-			if err != nil {
-				t.Fatal(err)
+
+	cleanup := func(tables ...string) func() {
+		return func() {
+			for _, table := range tables {
+				_, err = db.Exec(fmt.Sprintf("DELETE FROM %s", table))
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 		}
-		db.Close()
 	}
+	return &Service{DB: db}, cleanup
 }
