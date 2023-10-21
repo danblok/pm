@@ -21,7 +21,7 @@ type UpdateProjectInput struct {
 	Description string `json:"description,omitempty"`
 }
 
-// Returned errors: ErrFailedValidation, ErrInternal, ErrNoFound
+// Returned errors: ErrFailedValidation, ErrInternal, ErrNotFound
 func (s *Service) GetProjectById(ctx context.Context, id string) (*types.Project, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, ErrFailedValidation

@@ -11,7 +11,7 @@ var (
 	ErrFailedToPrepareTest = errors.New("failed to prepare test")
 	ErrFailedToInsert      = errors.New("failed to insert data")
 	ErrInternal            = errors.New("failed internal")
-	ErrNotFound            = errors.New("no found")
+	ErrNotFound            = errors.New("not found")
 )
 
 type Service struct {
