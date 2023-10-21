@@ -6,6 +6,7 @@ require github.com/labstack/echo/v4 v4.11.2
 
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/gommon v0.4.0 // indirect
