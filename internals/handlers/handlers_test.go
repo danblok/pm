@@ -12,7 +12,7 @@ import (
 )
 
 func setupApp(t *testing.T) (*App, func(...string)) {
-	db, err := sql.Open("postgres", os.Getenv("POSTGRES_URL_TEST"))
+	db, err := sql.Open("postgres", os.Getenv("POSTGRES_URL"))
 	if err != nil {
 		t.Fatal("db connection err: ", err)
 	}

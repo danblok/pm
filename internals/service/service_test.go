@@ -10,7 +10,7 @@ import (
 )
 
 func setupService(t *testing.T) (*Service, func(...string) func()) {
-	db, err := sql.Open("postgres", os.Getenv("POSTGRES_URL_TEST"))
+	db, err := sql.Open("postgres", os.Getenv("POSTGRES_URL"))
 	if err != nil {
 		t.Fatalf("connection to db: %s", err)
 	}
