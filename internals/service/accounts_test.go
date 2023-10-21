@@ -2,264 +2,255 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/danblok/pm/internals/types"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
 )
 
-func TestAddAccount(t *testing.T) {
-	s, cleanUp := setupServiceLifetime(t)
-	defer cleanUp("accounts")
-
-	want := types.Account{
-		Email: "username@gmail.com",
-		Name:  "Username",
-	}
-	input := AddAccountInput{
-		Name:  want.Name,
-		Email: want.Email,
-	}
-	err := s.AddAccount(context.TODO(), &input)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	row := s.DB.QueryRow("SELECT email, name FROM accounts LIMIT 1")
-	var got types.Account
-	err = row.Scan(&got.Email, &got.Name)
-	if err != nil {
-		t.Fatalf("scan err: %s", err)
-	}
-	if err = row.Err(); err != nil {
-		t.Fatalf("query err: %s", err)
-	}
-
-	if want.Email != got.Email {
-		t.Fatalf("want.Email: %s != got.Email: %s", want.Email, got.Email)
-	}
-	if want.Name != got.Name {
-		t.Fatalf("want.Name: %s != got.Name: %s", want.Name, got.Name)
-	}
-
-	input = AddAccountInput{
-		Name:  "",
-		Email: want.Email,
-	}
-	err = s.AddAccount(context.TODO(), &input)
-	if !errors.Is(err, ErrFailedValidation) {
-		t.Fatal("should error on incorrect Name field: ", err)
-	}
-
-	input = AddAccountInput{
-		Name:  want.Name,
-		Email: "",
-	}
-	err = s.AddAccount(context.TODO(), &input)
-	if !errors.Is(err, ErrFailedValidation) {
-		t.Fatal("should error on incorrect Email field: ", err)
-	}
-}
-
 func TestGetAccountById(t *testing.T) {
-	s, cleanUp := setupServiceLifetime(t)
-	defer cleanUp("accounts")
+	s, cleanup := setupService(t)
 
-	want := types.Account{
-		Id:    uuid.NewString(),
-		Email: "username@gmail.com",
-		Name:  "username",
-	}
-	_, err := s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", want.Id, want.Email, want.Name)
-	if err != nil {
-		t.Fatal("prep test insertion error: ", err)
+	accId := uuid.NewString()
+	tests := map[string]struct {
+		wantErr error
+		want    *types.Account
+		input   string
+	}{
+		"existent": {
+			input:   accId,
+			wantErr: nil,
+			want: &types.Account{
+				Id:    accId,
+				Name:  "username",
+				Email: "username@test.com",
+			},
+		},
+		"non-existent": {
+			input:   uuid.NewString(),
+			wantErr: ErrNotFound,
+			want:    nil,
+		},
+		"invalid id": {
+			input:   "invald-id",
+			wantErr: ErrFailedValidation,
+			want:    nil,
+		},
 	}
 
-	got, err := s.GetAccountById(context.TODO(), want.Id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want.Id != got.Id {
-		t.Fatalf("want.Id: %s != got.Id: %s", want.Id, got.Id)
-	}
-	if want.Email != got.Email {
-		t.Fatalf("want.Email: %s != got.Email: %s", want.Email, got.Email)
-	}
-	if want.Name != got.Name {
-		t.Fatalf("want.Name: %s != got.Name: %s", want.Name, got.Name)
-	}
+	for name, tt := range tests {
+		if tt.want != nil {
+			_, err := s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", tt.want.Id, tt.want.Email, tt.want.Name)
+			if err != nil {
+				t.Fatal(ErrFailedToPrepareTest, err)
+			}
+		}
 
-	_, err = s.GetAccountById(context.TODO(), "incorrect-id")
-	if !errors.Is(err, ErrFailedValidation) {
-		t.Fatal("should error on incorrect id err: ", err)
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("projects", "accounts"))
+
+			ctx := context.Background()
+			got, err := s.GetAccountById(ctx, tt.input)
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("GetAccountById() mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(types.Account{}, "CreatedAt", "UpdatedAt")); diff != "" {
+				t.Fatalf("GetAccountById() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestGetAllAccounts(t *testing.T) {
-	s, cleanUp := setupServiceLifetime(t)
-	defer cleanUp("accounts")
+	s, cleanup := setupService(t)
 
-	want := []types.Account{
-		{
-			Id:    uuid.NewString(),
-			Email: "username1@gmail.com",
-			Name:  "username1",
+	tests := map[string]struct {
+		wantErr error
+		want    []types.Account
+	}{
+		"2 projects": {
+			wantErr: nil,
+			want: []types.Account{
+				{
+					Id:    uuid.NewString(),
+					Name:  "username 1",
+					Email: "username1@test.com",
+				},
+				{
+					Id:    uuid.NewString(),
+					Name:  "username2",
+					Email: "username2@test.com",
+				},
+			},
 		},
-		{
-			Id:    uuid.NewString(),
-			Email: "username2@gmail.com",
-			Name:  "username3",
+		"0 projects": {
+			wantErr: nil,
+			want:    make([]types.Account, 0),
 		},
-	}
-	query := "INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3), ($4, $5, $6)"
-	_, err := s.DB.Exec(query, want[0].Id, want[0].Email, want[0].Name, want[1].Id, want[1].Email, want[1].Name)
-	if err != nil {
-		t.Fatal("prep test insertion error: ", err)
 	}
 
-	got, err := s.GetAllAccounts(context.TODO())
-	if err != nil {
-		t.Fatal(err)
+	for name, tt := range tests {
+		for _, p := range tt.want {
+			_, err := s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", p.Id, p.Email, p.Name)
+			if err != nil {
+				t.Fatal(ErrFailedToPrepareTest, err)
+			}
+		}
+
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("projects", "accounts"))
+
+			ctx := context.Background()
+			got, err := s.GetAllAccounts(ctx)
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("GetAccountById() mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(types.Account{}, "CreatedAt", "UpdatedAt")); diff != "" {
+				t.Fatalf("GetAccountById() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	if len(want) != len(got) {
-		t.Fatalf("want len: %d, got len: %d", len(want), len(got))
+}
+
+func TestAddAccount(t *testing.T) {
+	s, cleanup := setupService(t)
+
+	tests := map[string]struct {
+		wantErr error
+		input   *AddAccountInput
+	}{
+		"succsessfull add": {
+			input: &AddAccountInput{
+				Name:  "username",
+				Email: "username@test.com",
+			},
+			wantErr: nil,
+		},
+		"invalid name": {
+			input: &AddAccountInput{
+				Name:  "",
+				Email: "username@test.com",
+			},
+			wantErr: ErrFailedValidation,
+		},
+		"invalid email": {
+			input: &AddAccountInput{
+				Name:  "Project",
+				Email: "",
+			},
+			wantErr: ErrFailedValidation,
+		},
 	}
-	for idx := range got {
-		if want[idx].Id != got[idx].Id {
-			t.Fatalf("want.Id: %s != got.Id: %s", want[idx].Id, got[idx].Id)
-		}
-		if want[idx].Email != got[idx].Email {
-			t.Fatalf("want.Email: %s != got.Email: %s", want[idx].Email, got[idx].Email)
-		}
-		if want[idx].Name != got[idx].Name {
-			t.Fatalf("want.Name: %s != got.Name: %s", want[idx].Name, got[idx].Name)
-		}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("projects", "accounts"))
+
+			ctx := context.Background()
+			err := s.AddAccount(ctx, tt.input)
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("AddAccount() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestUpdateAccount(t *testing.T) {
-	s, cleanUp := setupServiceLifetime(t)
-	defer cleanUp("accounts")
+	s, cleanup := setupService(t)
 
 	acc := types.Account{
 		Id:    uuid.NewString(),
-		Email: "username@gmail.com",
 		Name:  "username",
+		Email: "username@test.com",
 	}
-	_, err := s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
-	if err != nil {
-		t.Fatal("prep test insertion error: ", err)
+	tests := map[string]struct {
+		wantErr error
+		input   *UpdateAccountInput
+	}{
+		"succsessfull update": {
+			input: &UpdateAccountInput{
+				Id:    acc.Id,
+				Name:  "New project",
+				Email: "newusername@test.com",
+			},
+			wantErr: nil,
+		},
+		"non-existent id": {
+			input: &UpdateAccountInput{
+				Id:    uuid.NewString(),
+				Name:  "New project",
+				Email: "newusername@test.com",
+			},
+			wantErr: ErrFailedToUpdate,
+		},
+		"invalid id": {
+			input: &UpdateAccountInput{
+				Id:    "invalid-id",
+				Name:  "",
+				Email: "username@test.com",
+			},
+			wantErr: ErrFailedValidation,
+		},
 	}
 
-	want := types.Account{
-		Id:    acc.Id,
-		Email: acc.Email,
-		Name:  "updated",
-	}
-	input := UpdateAccountInput{
-		Id:   want.Id,
-		Name: want.Name,
-	}
-	err = s.UpdateAccount(context.TODO(), &input)
-	if err != nil {
-		if errors.Is(err, ErrFailedToUpdate) {
-			t.Fatal("no rows were affected: ", err)
+	for name, tt := range tests {
+		_, err := s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
+		if err != nil {
+			t.Fatal(ErrFailedToPrepareTest, err)
 		}
-		t.Fatal("internal query err: ", err)
-	}
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("projects", "accounts"))
 
-	row := s.DB.QueryRow("SELECT id, email, name FROM accounts WHERE id=$1", want.Id)
-	var got types.Account
-	err = row.Scan(&got.Id, &got.Email, &got.Name)
-	if err != nil {
-		t.Fatalf("scan err: %s", err)
-	}
-	if err = row.Err(); err != nil {
-		t.Fatalf("query err: %s", err)
-	}
-
-	if want.Id != got.Id {
-		t.Fatalf("want.Id: %s != got.Id: %s", want.Id, got.Id)
-	}
-	if want.Email != got.Email {
-		t.Fatalf("want.Email: %s != got.Email: %s", want.Email, got.Email)
-	}
-	if want.Name != got.Name {
-		t.Fatalf("want.Name: %s != got.Name: %s", want.Name, got.Name)
-	}
-
-	input = UpdateAccountInput{
-		Id:   "",
-		Name: want.Name,
-	}
-	err = s.UpdateAccount(context.TODO(), &input)
-	if !errors.Is(err, ErrFailedValidation) {
-		t.Fatal("should error on incorrect id format validation: ", err)
-	}
-
-	input = UpdateAccountInput{
-		Id:   uuid.NewString(),
-		Name: want.Name,
-	}
-	err = s.UpdateAccount(context.TODO(), &input)
-	if !errors.Is(err, ErrFailedToUpdate) {
-		t.Fatalf("should error on none existing record with id: %s, err: %s", input.Id, err)
+			ctx := context.Background()
+			err := s.UpdateAccount(ctx, tt.input)
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("UpdateAccount() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
-func TestDeleteAccount(t *testing.T) {
-	s, cleanUp := setupServiceLifetime(t)
-	defer cleanUp("accounts")
+func TestDeleteAccountById(t *testing.T) {
+	s, cleanup := setupService(t)
 
-	err := s.DeleteAccountById(context.TODO(), "")
-	if !errors.Is(err, ErrFailedValidation) {
-		t.Fatal("should error on validation(incorrect id format): ", err)
+	acc := types.Account{
+		Id:    uuid.NewString(),
+		Name:  "username",
+		Email: "username@test.com",
+	}
+	tests := map[string]struct {
+		wantErr error
+		input   string
+	}{
+		"succsessfull delete": {
+			input:   acc.Id,
+			wantErr: nil,
+		},
+		"non-existent": {
+			input:   uuid.NewString(),
+			wantErr: ErrFailedToUpdate,
+		},
+		"invalid id": {
+			input:   "invalid-id",
+			wantErr: ErrFailedValidation,
+		},
 	}
 
-	id := uuid.NewString()
-	err = s.DeleteAccountById(context.TODO(), id)
-	if !errors.Is(err, ErrFailedToUpdate) {
-		t.Fatalf("should error on none existing record with id: %s, err: %s", id, err)
-	}
-
-	want := types.Account{
-		Id:      uuid.NewString(),
-		Email:   "username@gmail.com",
-		Name:    "username",
-		Deleted: true,
-	}
-	_, err = s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", want.Id, want.Email, want.Name)
-	if err != nil {
-		t.Fatal("prep test insertion error: ", err)
-	}
-
-	err = s.DeleteAccountById(context.TODO(), want.Id)
-	if err != nil {
-		if errors.Is(err, ErrFailedToUpdate) {
-			t.Fatal("no rows were affected: ", err)
+	for name, tt := range tests {
+		_, err := s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
+		if err != nil {
+			t.Fatal(ErrFailedToPrepareTest, err)
 		}
-		t.Fatal("internal query err: ", err)
-	}
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("projects", "accounts"))
 
-	got := new(types.Account)
-	row := s.DB.QueryRow("SELECT id, email, name, deleted FROM accounts WHERE id::text=$1", want.Id)
-	err = row.Scan(&got.Id, &got.Email, &got.Name, &got.Deleted)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want.Id != got.Id {
-		t.Fatalf("want.Id: %s != got.Id: %s", want.Id, got.Id)
-	}
-	if want.Email != got.Email {
-		t.Fatalf("want.Email: %s != got.Email: %s", want.Email, got.Email)
-	}
-	if want.Name != got.Name {
-		t.Fatalf("want.Name: %s != got.Name: %s", want.Name, got.Name)
-	}
-	if want.Deleted != got.Deleted {
-		t.Fatalf("want.Deleted: %t != got.Deleted: %t", want.Deleted, got.Deleted)
+			ctx := context.Background()
+			err := s.DeleteAccountById(ctx, tt.input)
+			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
+				t.Fatalf("DeleteAccountById() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
