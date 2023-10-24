@@ -14,7 +14,7 @@ func (a *App) HandleGetAccount(c echo.Context) error {
 		return a.UnwrapError(c, "Service.GetAccountById error: ", err)
 	}
 
-	return c.JSON(http.StatusOK, &acc)
+	return c.JSON(http.StatusOK, acc)
 }
 
 func (a *App) HandleGetAllAccounts(c echo.Context) error {

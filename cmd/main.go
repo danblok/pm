@@ -15,10 +15,10 @@ import (
 )
 
 func main() {
-	godotenv.Load()
+	godotenv.Load(".env")
 	url := os.Getenv("POSTGRES_URL")
 	if url == "" {
-		log.Fatal("POSTGRES_URL_ALT isn't specified")
+		log.Fatal("POSTGRES_URL isn't specified")
 	}
 
 	db, err := sql.Open("postgres", url)
@@ -50,7 +50,7 @@ func main() {
 	api.PATCH("/accounts/:id", app.HandleUpdateAccount)
 	api.GET("/projects/:id", app.HandleGetProjectById)
 	api.GET("/projects", app.HandleGetProjectsByOwner)
-	api.POST("/projects", app.HandleAddProject)
+	api.POST("/projects", app.HandlePostProject)
 	api.PATCH("/projects/:id", app.HandleUpdateProject)
 	api.DELETE("/projects/:id", app.HandleDeleteAccount)
 

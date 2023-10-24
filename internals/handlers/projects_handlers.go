@@ -31,7 +31,7 @@ func (a *App) HandleGetProjectsByOwner(c echo.Context) error {
 	return c.JSONPretty(http.StatusOK, pjs, "  ")
 }
 
-func (a *App) HandleAddProject(c echo.Context) error {
+func (a *App) HandlePostProject(c echo.Context) error {
 	ctx := c.Request().Context()
 	input := new(service.AddProjectInput)
 	err := c.Bind(input)
@@ -60,5 +60,17 @@ func (a *App) HandleUpdateProject(c echo.Context) error {
 		a.UnwrapError(c, "", err)
 	}
 
-	return c.NoContent(http.StatusCreated)
+	return c.NoContent(http.StatusOK)
+}
+
+func (a *App) HandleDeleteProject(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
+
+	err := a.Service.DeleteProjectById(ctx, id)
+	if err != nil {
+		a.UnwrapError(c, "", err)
+	}
+
+	return c.NoContent(http.StatusOK)
 }

@@ -49,7 +49,7 @@ func TestGetAccountById(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("projects", "accounts"))
+			t.Cleanup(cleanup("accounts"))
 
 			ctx := context.Background()
 			got, err := s.GetAccountById(ctx, tt.input)
@@ -70,7 +70,7 @@ func TestGetAllAccounts(t *testing.T) {
 		wantErr error
 		want    []types.Account
 	}{
-		"2 projects": {
+		"2 accounts": {
 			wantErr: nil,
 			want: []types.Account{
 				{
@@ -80,35 +80,35 @@ func TestGetAllAccounts(t *testing.T) {
 				},
 				{
 					Id:    uuid.NewString(),
-					Name:  "username2",
+					Name:  "username 2",
 					Email: "username2@test.com",
 				},
 			},
 		},
-		"0 projects": {
+		"0 accounts": {
 			wantErr: nil,
-			want:    make([]types.Account, 0),
+			want:    []types.Account{},
 		},
 	}
 
 	for name, tt := range tests {
-		for _, p := range tt.want {
-			_, err := s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", p.Id, p.Email, p.Name)
+		for _, acc := range tt.want {
+			_, err := s.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
 			if err != nil {
 				t.Fatal(ErrFailedToPrepareTest, err)
 			}
 		}
 
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("projects", "accounts"))
+			t.Cleanup(cleanup("accounts"))
 
 			ctx := context.Background()
 			got, err := s.GetAllAccounts(ctx)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
-				t.Fatalf("GetAccountById() mismatch (-want +got):\n%s", diff)
+				t.Fatalf("GetAllAccounts() mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(tt.want, got, cmpopts.IgnoreFields(types.Account{}, "CreatedAt", "UpdatedAt")); diff != "" {
-				t.Fatalf("GetAccountById() mismatch (-want +got):\n%s", diff)
+				t.Fatalf("GetAllAccounts() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -146,7 +146,7 @@ func TestAddAccount(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("projects", "accounts"))
+			t.Cleanup(cleanup("accounts"))
 
 			ctx := context.Background()
 			err := s.AddAccount(ctx, tt.input)
@@ -201,7 +201,7 @@ func TestUpdateAccount(t *testing.T) {
 			t.Fatal(ErrFailedToPrepareTest, err)
 		}
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("projects", "accounts"))
+			t.Cleanup(cleanup("accounts"))
 
 			ctx := context.Background()
 			err := s.UpdateAccount(ctx, tt.input)
@@ -244,7 +244,7 @@ func TestDeleteAccountById(t *testing.T) {
 			t.Fatal(ErrFailedToPrepareTest, err)
 		}
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("projects", "accounts"))
+			t.Cleanup(cleanup("accounts"))
 
 			ctx := context.Background()
 			err := s.DeleteAccountById(ctx, tt.input)
