@@ -1,179 +1,313 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
+	"github.com/danblok/pm/internals/service"
 	"github.com/danblok/pm/internals/types"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
-// Test data
-var (
-	addUserJson    = `{"name":"handlers_username", "email": "handlers_username@gmail.com"}`
-	updateUserJson = `{"name":"updated_username"}`
-)
-
 func TestHandleGetAccount(t *testing.T) {
-	app, cleanUp := setupApp(t)
-	defer cleanUp("accounts")
+	app, cleanup := setupApp(t)
 
-	acc := types.Account{
-		Id:    uuid.NewString(),
-		Email: "username@gmail.com",
-		Name:  "username",
+	accId := uuid.NewString()
+
+	tests := map[string]struct {
+		wantCode int
+		input    string
+		want     *types.Account
+	}{
+		"existent": {
+			input:    accId,
+			wantCode: http.StatusOK,
+			want: &types.Account{
+				Id:    accId,
+				Name:  "username",
+				Email: "username@test.com",
+			},
+		},
+		"non-existent": {
+			input:    uuid.NewString(),
+			wantCode: http.StatusBadRequest,
+			want:     nil,
+		},
+		"invalid id": {
+			input:    "invald-id",
+			wantCode: http.StatusBadRequest,
+			want:     nil,
+		},
 	}
-	app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/accounts", nil)
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	res := httptest.NewRecorder()
-	c := e.NewContext(req, res)
-	c.SetPath("/accounts/:id")
-	c.SetParamNames("id")
-	c.SetParamValues(acc.Id)
+	for name, tt := range tests {
+		if tt.want != nil {
+			_, err := app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", tt.want.Id, tt.want.Email, tt.want.Name)
+			if err != nil {
+				t.Fatal(service.ErrFailedToPrepareTest, err)
+			}
+		}
 
-	err := app.HandleGetAccount(c)
-	if err != nil {
-		t.Fatal(err)
-	}
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("accounts"))
 
-	want := http.StatusOK
-	got := res.Code
-	if want != got {
-		t.Fatalf("want: %d, recieved: %d", want, got)
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			res := httptest.NewRecorder()
+			c := e.NewContext(req, res)
+			c.SetPath("/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.input)
+			app.HandleGetAccount(c)
+
+			gotCode := res.Code
+			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {
+				t.Fatalf("HandleGetAccount() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestHandleGetAllAccounts(t *testing.T) {
-	app, cleanUp := setupApp(t)
-	defer cleanUp("accounts")
+	app, cleanup := setupApp(t)
 
-	accs := []types.Account{
-		{
-			Id:    uuid.NewString(),
-			Email: "username1@gmail.com",
-			Name:  "username1",
+	tests := map[string]struct {
+		wantCode int
+		want     []types.Account
+	}{
+		"2 accounts": {
+			want: []types.Account{
+				{
+					Id:    uuid.NewString(),
+					Name:  "username 1",
+					Email: "username1@test.com",
+				},
+				{
+					Id:    uuid.NewString(),
+					Name:  "username 2",
+					Email: "username2@test.com",
+				},
+			},
+			wantCode: http.StatusOK,
 		},
-		{
-			Id:    uuid.NewString(),
-			Email: "username2@gmail.com",
-			Name:  "username2",
+		"0 accounts": {
+			wantCode: http.StatusOK,
+			want:     []types.Account{},
 		},
 	}
-	query := "INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3), ($4, $5, $6)"
-	app.Service.DB.Exec(query, accs[0].Id, accs[0].Email, accs[0].Name)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	res := httptest.NewRecorder()
-	c := e.NewContext(req, res)
+	for name, tt := range tests {
+		for _, acc := range tt.want {
+			_, err := app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
+			if err != nil {
+				t.Fatal(service.ErrFailedToPrepareTest, err)
+			}
+		}
 
-	err := app.HandleGetAllAccounts(c)
-	if err != nil {
-		t.Fatal(err)
-	}
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("accounts"))
 
-	want := http.StatusOK
-	got := res.Code
-	if want != got {
-		t.Fatalf("want: %d, recieved: %d", want, got)
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			res := httptest.NewRecorder()
+			c := e.NewContext(req, res)
+			app.HandleGetAllAccounts(c)
+
+			gotCode := res.Code
+			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {
+				t.Fatalf("HandleGetAllAccounts() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestHandlePostAccount(t *testing.T) {
-	app, cleanUp := setupApp(t)
-	defer cleanUp("accounts")
+	app, cleanup := setupApp(t)
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(addUserJson))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	res := httptest.NewRecorder()
-	c := e.NewContext(req, res)
-
-	err := app.HandlePostAccount(c)
-	if err != nil {
-		t.Fatal(err)
+	type input struct {
+		Name   string `json:"name"`
+		Email  string `json:"email"`
+		Avatar string `json:"avatar,omitempty"`
+	}
+	tests := map[string]struct {
+		wantCode int
+		input    *input
+	}{
+		"succsessfull add": {
+			input: &input{
+				Name:  "username",
+				Email: "username@test.com",
+			},
+			wantCode: http.StatusCreated,
+		},
+		"invalid name": {
+			input: &input{
+				Name:  "",
+				Email: "username@test.com",
+			},
+			wantCode: http.StatusBadRequest,
+		},
+		"invalid email": {
+			input: &input{
+				Name:  "Project",
+				Email: "",
+			},
+			wantCode: http.StatusBadRequest,
+		},
 	}
 
-	want := http.StatusCreated
-	got := res.Code
-	if want != got {
-		t.Fatalf("want: %d, recieved: %d", want, got)
+	for name, tt := range tests {
+		data, err := json.Marshal(tt.input)
+		if err != nil {
+			t.Fatal(service.ErrFailedToPrepareTest)
+		}
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("accounts"))
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(data))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			res := httptest.NewRecorder()
+			c := e.NewContext(req, res)
+			app.HandlePostAccount(c)
+
+			gotCode := res.Code
+			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {
+				t.Fatalf("HandleUpdateAccount() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
-func TestHandlePatchAccount(t *testing.T) {
-	app, cleanUp := setupApp(t)
-	defer cleanUp("accounts")
-	defer func() {
-		_, err := app.Service.DB.Exec("DELETE FROM accounts")
-		if err != nil {
-			t.Fatal("couldn't clean up the accounts table", err)
-		}
-	}()
+func TestHandleUpdateAccount(t *testing.T) {
+	app, cleanup := setupApp(t)
 
+	type input struct {
+		Name   string `json:"name,omitempty"`
+		Email  string `json:"email,omitempty"`
+		Avatar string `json:"avatar,omitempty"`
+	}
 	acc := types.Account{
 		Id:    uuid.NewString(),
-		Email: "username@gmail.com",
 		Name:  "username",
+		Email: "username@test.com",
 	}
-	app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPatch, "/", strings.NewReader(updateUserJson))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	res := httptest.NewRecorder()
-	c := e.NewContext(req, res)
-	c.SetPath("/:id")
-	c.SetParamNames("id")
-	c.SetParamValues(acc.Id)
-
-	err := app.HandleUpdateAccount(c)
-	if err != nil {
-		t.Fatal(err)
+	tests := map[string]struct {
+		wantCode int
+		input    *input
+		param    string
+	}{
+		"succsessfull update": {
+			param: acc.Id,
+			input: &input{
+				Name:  "New project",
+				Email: "newusername@test.com",
+			},
+			wantCode: http.StatusOK,
+		},
+		"non-existent id": {
+			param: uuid.NewString(),
+			input: &input{
+				Name:  "New project",
+				Email: "newusername@test.com",
+			},
+			wantCode: http.StatusBadRequest,
+		},
+		"invalid id": {
+			param: "invalid-id",
+			input: &input{
+				Name:  "",
+				Email: "username@test.com",
+			},
+			wantCode: http.StatusBadRequest,
+		},
 	}
 
-	want := http.StatusOK
-	got := res.Code
-	if want != got {
-		t.Fatalf("want: %d, recieved: %d", want, got)
+	for name, tt := range tests {
+		_, err := app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
+		if err != nil {
+			t.Fatal(service.ErrFailedToPrepareTest, err)
+		}
+		data, err := json.Marshal(tt.input)
+		if err != nil {
+			t.Fatal(service.ErrFailedToPrepareTest)
+		}
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("accounts"))
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(data))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			res := httptest.NewRecorder()
+			c := e.NewContext(req, res)
+			c.SetPath("/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.param)
+			app.HandleUpdateAccount(c)
+
+			gotCode := res.Code
+			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {
+				t.Fatalf("HandleUpdateAccount() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestHandleDeleteAccount(t *testing.T) {
-	app, cleanUp := setupApp(t)
-	defer cleanUp("accounts")
+	app, cleanup := setupApp(t)
 
 	acc := types.Account{
 		Id:    uuid.NewString(),
-		Email: "username@gmail.com",
 		Name:  "username",
+		Email: "username@test.com",
 	}
-	app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	res := httptest.NewRecorder()
-	c := e.NewContext(req, res)
-	c.SetPath("/:id")
-	c.SetParamNames("id")
-	c.SetParamValues(acc.Id)
-
-	err := app.HandleDeleteAccount(c)
-	if err != nil {
-		t.Fatal(err)
+	tests := map[string]struct {
+		wantCode int
+		input    string
+	}{
+		"succsessfull delete": {
+			input:    acc.Id,
+			wantCode: http.StatusOK,
+		},
+		"non-existent": {
+			input:    uuid.NewString(),
+			wantCode: http.StatusBadRequest,
+		},
+		"invalid id": {
+			input:    "invalid-id",
+			wantCode: http.StatusBadRequest,
+		},
 	}
 
-	want := http.StatusOK
-	got := res.Code
-	if want != got {
-		t.Fatalf("want: %d, recieved: %d", want, got)
+	for name, tt := range tests {
+		_, err := app.Service.DB.Exec("INSERT INTO accounts (id, email, name) VALUES ($1, $2, $3)", acc.Id, acc.Email, acc.Name)
+		if err != nil {
+			t.Fatal(service.ErrFailedToPrepareTest, err)
+		}
+		t.Run(name, func(t *testing.T) {
+			t.Cleanup(cleanup("accounts"))
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			res := httptest.NewRecorder()
+			c := e.NewContext(req, res)
+			c.SetPath("/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.input)
+			app.HandleUpdateAccount(c)
+
+			gotCode := res.Code
+			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {
+				t.Fatalf("HandleDeleteAccount() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
