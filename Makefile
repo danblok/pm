@@ -3,7 +3,6 @@ ENV ?= development
 -include .env.$(ENV)
 export
 
-
 build:
 	go build -C cmd -o ../bin/main
 
@@ -26,5 +25,5 @@ test:
 	docker compose -p testing up -d
 	sleep 2
 	-migrate -database "$(POSTGRES_URL)" -path migrations up
-	-POSTGRES_URL=$(POSTGRES_URL) go test ./... -cover -v -count 1
+	-POSTGRES_URL=$(POSTGRES_URL) go test ./... -p 1 -cover -v -count 1
 	docker rm -f test
