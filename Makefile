@@ -21,6 +21,9 @@ migrate-force:
 migrate-drop:
 	migrate -database "$(POSTGRES_URL)" -path migrations drop
 
+connect-db:
+	psql -d "host=localhost port=$(POSTGRES_PORT) password=$(POSTGRES_PASSWORD) user=$(POSTGRES_USER)"
+
 test:
 	docker compose -p testing up -d
 	sleep 2
