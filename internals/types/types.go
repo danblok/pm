@@ -57,15 +57,13 @@ type Status struct {
 }
 
 type Comment struct {
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	Task       *Task     `json:"task,omitempty"`
-	Sender     *Account  `json:"sender,omitempty"`
-	Receiver   *Account  `json:"receiver,omitempty"`
-	Id         string    `json:"id"`
-	Text       string    `json:"text"`
-	TaskId     string    `json:"task_id"`
-	SenderId   string    `json:"sender_id"`
-	ReceiverId string    `json:"receiver_id"`
-	Deleted    bool      `json:"deleted"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Task      *Task     `json:"task,omitempty"`
+	Sender    *Account  `json:"sender,omitempty"`
+	Id        string    `json:"id"`
+	Text      string    `json:"text"`
+	TaskId    string    `json:"task_id"`
+	SenderId  string    `json:"sender_id"`
+	Deleted   bool      `json:"deleted"`
 }

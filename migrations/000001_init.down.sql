@@ -1,7 +1,6 @@
 BEGIN;
 ALTER TABLE projects_to_accounts DROP CONSTRAINT fk_projects_to_accounts_accounts;
 ALTER TABLE projects_to_accounts DROP CONSTRAINT fk_projects_to_accounts_projects;
-ALTER TABLE comments DROP CONSTRAINT fk_comments_accounts_receiver;
 ALTER TABLE comments DROP CONSTRAINT fk_comments_accounts_sender;
 ALTER TABLE comments DROP CONSTRAINT fk_comments_tasks;
 ALTER TABLE statuses DROP CONSTRAINT fk_statuses_projects;

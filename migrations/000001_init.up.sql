@@ -48,7 +48,6 @@ CREATE TABLE IF NOT EXISTS comments (
     "text" TEXT NOT NULL,
     "task_id" uuid NOT NULL,
     "sender_id" uuid NOT NULL,
-    "receiver_id" uuid NOT NULL,
     "deleted" BOOLEAN DEFAULT FALSE,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
@@ -94,11 +93,6 @@ ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE comments
 ADD CONSTRAINT fk_comments_accounts_sender
 FOREIGN KEY (sender_id) REFERENCES accounts(id)
-ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE comments
-ADD CONSTRAINT fk_comments_accounts_receiver
-FOREIGN KEY (receiver_id) REFERENCES accounts(id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE projects_to_accounts
