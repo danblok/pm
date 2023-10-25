@@ -53,6 +53,11 @@ func main() {
 	api.POST("/projects", app.HandlePostProject)
 	api.PATCH("/projects/:id", app.HandleUpdateProject)
 	api.DELETE("/projects/:id", app.HandleDeleteAccount)
+	api.GET("/statuses/:id", app.HandleGetStatusById)
+	api.GET("/statuses", app.HandleGetStatusesByOwner)
+	api.POST("/statuses", app.HandlePostStatus)
+	api.PATCH("/statuses/:id", app.HandleUpdateStatus)
+	api.DELETE("/statuses/:id", app.HandleDeleteAccount)
 
 	app.Logger.Info("Server started on http://localhost:3000")
 	e.Logger.Fatal(e.Start(":3000"))
