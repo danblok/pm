@@ -137,7 +137,7 @@ func TestHandleGetProjectsByOwnerId(t *testing.T) {
 			t.Cleanup(cleanup("projects", "accounts"))
 
 			q := make(url.Values)
-			q.Set("pid", tt.input)
+			q.Set("oid", tt.input)
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)

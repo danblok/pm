@@ -21,9 +21,9 @@ func (a *App) HandleGetProjectById(c echo.Context) error {
 
 func (a *App) HandleGetProjectsByOwner(c echo.Context) error {
 	ctx := c.Request().Context()
-	pId := c.QueryParam("pid")
+	oId := c.QueryParam("oid")
 
-	pjs, err := a.Service.GetProjectsByOwnerId(ctx, pId)
+	pjs, err := a.Service.GetProjectsByOwnerId(ctx, oId)
 	if err != nil {
 		a.UnwrapError(c, "", err)
 	}

@@ -44,13 +44,13 @@ func (s *Service) GetProjectById(ctx context.Context, id string) (*types.Project
 }
 
 // Returned errors: ErrFailedValidation, ErrInternal
-func (s *Service) GetProjectsByOwnerId(ctx context.Context, pId string) ([]types.Project, error) {
+func (s *Service) GetProjectsByOwnerId(ctx context.Context, ownerId string) ([]types.Project, error) {
 	pjs := make([]types.Project, 0)
-	if _, err := uuid.Parse(pId); err != nil {
+	if _, err := uuid.Parse(ownerId); err != nil {
 		return pjs, ErrFailedValidation
 	}
 	query := "SELECT * FROM projects WHERE owner_id=$1 AND deleted=false"
-	rows, err := s.DB.QueryContext(ctx, query, pId)
+	rows, err := s.DB.QueryContext(ctx, query, ownerId)
 	if err != nil {
 		return nil, ErrInternal
 	}

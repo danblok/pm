@@ -22,7 +22,7 @@ type UpdateAccountInput struct {
 	Avatar string `json:"avatar,omitempty"`
 }
 
-// Errors returned: ErrFailedValidation, ErrInternal
+// Errors returned: ErrFailedValidation, ErrInternal, ErrNotFound
 func (s *Service) GetAccountById(ctx context.Context, id string) (*types.Account, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, ErrFailedValidation
