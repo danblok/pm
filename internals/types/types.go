@@ -41,7 +41,6 @@ type Task struct {
 	Name      string    `json:"name"`
 	StatusId  string    `json:"status_id"`
 	ProjectId string    `json:"project_id"`
-	Comments  []Comment `json:"comments"`
 	Deleted   bool      `json:"deleted"`
 }
 
@@ -53,17 +52,5 @@ type Status struct {
 	Name      string    `json:"name"`
 	ProjectId string    `json:"project_id"`
 	Tasks     []Task    `json:"tasks"`
-	Deleted   bool      `json:"deleted"`
-}
-
-type Comment struct {
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Task      *Task     `json:"task,omitempty"`
-	Sender    *Account  `json:"sender,omitempty"`
-	Id        string    `json:"id"`
-	Text      string    `json:"text"`
-	TaskId    string    `json:"task_id"`
-	SenderId  string    `json:"sender_id"`
 	Deleted   bool      `json:"deleted"`
 }

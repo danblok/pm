@@ -43,17 +43,6 @@ CREATE TABLE IF NOT EXISTS statuses (
     PRIMARY KEY(id)
 );
 
-CREATE TABLE IF NOT EXISTS comments (
-    "id" uuid DEFAULT gen_random_uuid(),
-    "text" TEXT NOT NULL,
-    "task_id" uuid NOT NULL,
-    "sender_id" uuid NOT NULL,
-    "deleted" BOOLEAN DEFAULT FALSE,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT now(),
-    PRIMARY KEY(id)
-);
-
 CREATE TABLE IF NOT EXISTS projects_to_accounts (
     "project_id" uuid NOT NULL,
     "account_id" uuid NOT NULL
@@ -83,16 +72,6 @@ ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE statuses
 ADD CONSTRAINT fk_statuses_projects
 FOREIGN KEY (project_id) REFERENCES projects(id)
-ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE comments
-ADD CONSTRAINT fk_comments_tasks
-FOREIGN KEY (task_id) REFERENCES tasks(id)
-ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE comments
-ADD CONSTRAINT fk_comments_accounts_sender
-FOREIGN KEY (sender_id) REFERENCES accounts(id)
 ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE projects_to_accounts
