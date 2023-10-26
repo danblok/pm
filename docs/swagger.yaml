@@ -1,0 +1,741 @@
+basePath: /api/v1
+definitions:
+  service.AddAccountInput:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+    type: object
+  service.AddProjectInput:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: string
+    type: object
+  service.AddStatusInput:
+    properties:
+      name:
+        type: string
+      project_id:
+        type: string
+    type: object
+  service.AddTaskInput:
+    properties:
+      end:
+        type: string
+      name:
+        type: string
+      project_id:
+        type: string
+      start:
+        type: string
+      status_id:
+        type: string
+    type: object
+  types.Account:
+    properties:
+      avatar:
+        type: string
+      contributed_projects:
+        items:
+          $ref: '#/definitions/types.Project'
+        type: array
+      created_at:
+        type: string
+      deleted:
+        type: boolean
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owned_projets:
+        items:
+          $ref: '#/definitions/types.Project'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  types.HTTPError:
+    properties:
+      message:
+        type: string
+    type: object
+  types.Project:
+    properties:
+      contributors:
+        items:
+          $ref: '#/definitions/types.Account'
+        type: array
+      created_at:
+        type: string
+      deleted:
+        type: boolean
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owner:
+        $ref: '#/definitions/types.Account'
+      owner_id:
+        type: string
+      statuses:
+        items:
+          $ref: '#/definitions/types.Status'
+        type: array
+      tasks:
+        items:
+          $ref: '#/definitions/types.Task'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  types.Status:
+    properties:
+      created_at:
+        type: string
+      deleted:
+        type: boolean
+      id:
+        type: string
+      name:
+        type: string
+      project:
+        $ref: '#/definitions/types.Project'
+      project_id:
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/types.Task'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  types.Task:
+    properties:
+      created_at:
+        type: string
+      deleted:
+        type: boolean
+      end:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      project:
+        $ref: '#/definitions/types.Project'
+      project_id:
+        type: string
+      start:
+        type: string
+      status:
+        $ref: '#/definitions/types.Status'
+      status_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: This is a PM server.
+  title: Swagger PM API
+  version: "1.0"
+paths:
+  /accounts:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Account'
+            type: array
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Returns all accounts
+      tags:
+      - accounts
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: object of type AddAccountInput
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.AddAccountInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Create an account
+      tags:
+      - account
+  /accounts/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Delete an account
+      tags:
+      - account
+    get:
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Account'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Returns an account by ID
+      tags:
+      - account
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: body of type AddAccountInput
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/service.AddAccountInput'
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Patch an account
+      tags:
+      - account
+  /projects:
+    get:
+      parameters:
+      - description: Account ID
+        in: path
+        name: pid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Project'
+            type: array
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Returns all projects of an account
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: object of type AddProjectInput
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.AddProjectInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Create a new project
+      tags:
+      - project
+  /projects/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Delete a project
+      tags:
+      - project
+    get:
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Returns a project
+      tags:
+      - project
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: body of type AddProjectInput
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/service.AddProjectInput'
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Patche a project
+      tags:
+      - project
+  /statuses:
+    get:
+      parameters:
+      - description: Account ID
+        in: path
+        name: pid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Status'
+            type: array
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Returns all statuses of a project
+      tags:
+      - statuses
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: object of type AddStatusInput
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.AddStatusInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Create a new status
+      tags:
+      - status
+  /statuses/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Status ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Delete a status
+      tags:
+      - status
+    get:
+      parameters:
+      - description: Status ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Status'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Returns a status
+      tags:
+      - status
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: body of type AddStatusInput
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/service.AddStatusInput'
+      - description: Status ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Patche a status
+      tags:
+      - status
+  /tasks:
+    get:
+      parameters:
+      - description: Project ID
+        in: path
+        name: pid
+        required: true
+        type: string
+      - description: Status ID
+        in: path
+        name: sid
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Task'
+            type: array
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Returns list of tasks of a project
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: object of type AddTaskInput
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/service.AddTaskInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Create a new task
+      tags:
+      - task
+  /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Delete a task
+      tags:
+      - task
+    get:
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Task'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Returns a task
+      tags:
+      - task
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: body of type AddTaskInput
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/service.AddTaskInput'
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.HTTPError'
+      summary: Patche a task
+      tags:
+      - task
+swagger: "2.0"
