@@ -54,3 +54,7 @@ type Status struct {
 	Tasks     []Task    `json:"tasks"`
 	Deleted   bool      `json:"deleted"`
 }
+
+type HTTPError struct {
+	Message string `json:"message"`
+}
