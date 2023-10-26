@@ -297,7 +297,7 @@ func TestHandleUpdateProject(t *testing.T) {
 			c.SetPath("/:id")
 			c.SetParamNames("id")
 			c.SetParamValues(tt.param)
-			app.HandleUpdateProject(c)
+			app.HandlePatchProject(c)
 
 			gotCode := res.Code
 			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {

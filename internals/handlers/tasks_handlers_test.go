@@ -601,7 +601,7 @@ func TestHandleUpdateTask(t *testing.T) {
 			c.SetPath("/:id")
 			c.SetParamNames("id")
 			c.SetParamValues(tt.param)
-			app.HandleUpdateTask(c)
+			app.HandlePatchTask(c)
 
 			gotCode := res.Code
 			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {

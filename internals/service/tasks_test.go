@@ -183,7 +183,7 @@ func TestGetTasksByProjectId(t *testing.T) {
 	}
 }
 
-func TestGetTasksByStatusId(t *testing.T) {
+func TestGetTasksOfProjectByStatusId(t *testing.T) {
 	s, cleanup := setupService(t)
 
 	owner := types.Account{
@@ -204,16 +204,30 @@ func TestGetTasksByStatusId(t *testing.T) {
 	}
 	tests := map[string]struct {
 		wantErr error
-		input   string
+		input   struct{ statusId, projectId string }
 		want    []types.Task
 	}{
-		"invalid owner id": {
-			input:   "invalid-id",
+		"invalid status id": {
+			input: struct {
+				statusId  string
+				projectId string
+			}{statusId: "invalid-id", projectId: project.Id},
+			wantErr: ErrFailedValidation,
+			want:    []types.Task{},
+		},
+		"invalid project id": {
+			input: struct {
+				statusId  string
+				projectId string
+			}{projectId: "invalid-id", statusId: status.Id},
 			wantErr: ErrFailedValidation,
 			want:    []types.Task{},
 		},
 		"2 statuses": {
-			input:   status.Id,
+			input: struct {
+				statusId  string
+				projectId string
+			}{statusId: status.Id, projectId: project.Id},
 			wantErr: nil,
 			want: []types.Task{
 				{
@@ -260,7 +274,7 @@ func TestGetTasksByStatusId(t *testing.T) {
 			t.Cleanup(cleanup("projects", "accounts", "statuses", "tasks"))
 
 			ctx := context.Background()
-			got, err := s.GetTasksByStatusId(ctx, tt.input)
+			got, err := s.GetTasksOfProjectByStatusId(ctx, tt.input.projectId, tt.input.statusId)
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Fatalf("GetTasksByStatusId() mismatch (-want +got):\n%s", diff)
 			}

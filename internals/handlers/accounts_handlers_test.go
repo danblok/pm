@@ -250,7 +250,7 @@ func TestHandleUpdateAccount(t *testing.T) {
 			c.SetPath("/:id")
 			c.SetParamNames("id")
 			c.SetParamValues(tt.param)
-			app.HandleUpdateAccount(c)
+			app.HandlePatchAccount(c)
 
 			gotCode := res.Code
 			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {
@@ -302,7 +302,7 @@ func TestHandleDeleteAccount(t *testing.T) {
 			c.SetPath("/:id")
 			c.SetParamNames("id")
 			c.SetParamValues(tt.input)
-			app.HandleUpdateAccount(c)
+			app.HandlePatchAccount(c)
 
 			gotCode := res.Code
 			if diff := cmp.Diff(tt.wantCode, gotCode); diff != "" {

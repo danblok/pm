@@ -77,13 +77,16 @@ func (s *Service) GetTasksByProjectId(ctx context.Context, pId string) ([]types.
 }
 
 // Returned errors: ErrFailedValidation, ErrInternal
-func (s *Service) GetTasksByStatusId(ctx context.Context, sId string) ([]types.Task, error) {
+func (s *Service) GetTasksOfProjectByStatusId(ctx context.Context, pId, sId string) ([]types.Task, error) {
 	ts := make([]types.Task, 0)
+	if _, err := uuid.Parse(pId); err != nil {
+		return ts, ErrFailedValidation
+	}
 	if _, err := uuid.Parse(sId); err != nil {
 		return ts, ErrFailedValidation
 	}
-	query := "SELECT * FROM tasks WHERE status_id=$1 AND deleted=false"
-	rows, err := s.DB.QueryContext(ctx, query, sId)
+	query := "SELECT * FROM tasks WHERE project_id=$1 AND status_id=$2 AND deleted=false"
+	rows, err := s.DB.QueryContext(ctx, query, pId, sId)
 	if err != nil {
 		return nil, ErrInternal
 	}
