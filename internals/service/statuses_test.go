@@ -323,7 +323,7 @@ func TestDeleteStatusById(t *testing.T) {
 			input:   "invalid-id",
 			wantErr: ErrFailedValidation,
 		},
-		"non-existent project id": {
+		"non-existent status id": {
 			input:   uuid.NewString(),
 			wantErr: ErrFailedToUpdate,
 		},

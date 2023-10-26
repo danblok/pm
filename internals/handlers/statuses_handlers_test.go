@@ -324,7 +324,7 @@ func TestHandleUpdateStatus(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("accounts"))
+			t.Cleanup(cleanup("accounts", "projects", "statuses"))
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(data))
@@ -396,7 +396,7 @@ func TestHandleDeleteStatusById(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("accounts"))
+			t.Cleanup(cleanup("accounts", "projects", "statuses"))
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/", nil)

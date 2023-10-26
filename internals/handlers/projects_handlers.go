@@ -13,7 +13,7 @@ func (a *App) HandleGetProjectById(c echo.Context) error {
 
 	p, err := a.Service.GetProjectById(ctx, id)
 	if err != nil {
-		a.UnwrapError(c, "", err)
+		return a.UnwrapError(c, "", err)
 	}
 
 	return c.JSONPretty(http.StatusOK, &p, "  ")
@@ -25,7 +25,7 @@ func (a *App) HandleGetProjectsByOwner(c echo.Context) error {
 
 	pjs, err := a.Service.GetProjectsByOwnerId(ctx, oId)
 	if err != nil {
-		a.UnwrapError(c, "", err)
+		return a.UnwrapError(c, "", err)
 	}
 
 	return c.JSONPretty(http.StatusOK, pjs, "  ")
@@ -41,7 +41,7 @@ func (a *App) HandlePostProject(c echo.Context) error {
 
 	err = a.Service.AddProject(ctx, input)
 	if err != nil {
-		a.UnwrapError(c, "", err)
+		return a.UnwrapError(c, "", err)
 	}
 
 	return c.NoContent(http.StatusCreated)
@@ -57,7 +57,7 @@ func (a *App) HandleUpdateProject(c echo.Context) error {
 
 	err = a.Service.UpdateProject(ctx, input)
 	if err != nil {
-		a.UnwrapError(c, "", err)
+		return a.UnwrapError(c, "", err)
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -69,7 +69,7 @@ func (a *App) HandleDeleteProject(c echo.Context) error {
 
 	err := a.Service.DeleteProjectById(ctx, id)
 	if err != nil {
-		a.UnwrapError(c, "", err)
+		return a.UnwrapError(c, "", err)
 	}
 
 	return c.NoContent(http.StatusOK)

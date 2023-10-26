@@ -15,7 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func TestHandleHandleGetProjectById(t *testing.T) {
+func TestHandleGetProjectById(t *testing.T) {
 	app, cleanup := setupApp(t)
 
 	pId := uuid.NewString()
@@ -287,7 +287,7 @@ func TestHandleUpdateProject(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("accounts"))
+			t.Cleanup(cleanup("projects", "accounts"))
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(data))
@@ -349,7 +349,7 @@ func TestHandleDeleteProjectById(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			t.Cleanup(cleanup("accounts"))
+			t.Cleanup(cleanup("accounts", "projects"))
 
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodPost, "/", nil)
